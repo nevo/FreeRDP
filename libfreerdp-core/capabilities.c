@@ -1493,6 +1493,8 @@ void rdp_write_rfx_client_capability_container(STREAM* s, rdpSettings* settings)
 	stream_write_uint16(s, CLW_VERSION_1_0); /* version */
 	stream_write_uint16(s, CT_TILE_64x64); /* tileSize */
 	stream_write_uint8(s, codecMode); /* flags */
+	/* XXX - RFX codec mode hack */
+	stream_write_uint8(s, codecMode & 0xff); /* flags */
 	stream_write_uint8(s, CLW_COL_CONV_ICT); /* colConvBits */
 	stream_write_uint8(s, CLW_XFORM_DWT_53_A); /* transformBits */
 	stream_write_uint8(s, CLW_ENTROPY_RLGR1); /* entropyBits */

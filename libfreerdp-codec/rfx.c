@@ -892,3 +892,79 @@ FREERDP_API void rfx_compose_message(RFX_CONTEXT* context, STREAM* s,
 	rfx_compose_message_data(context, s, rects, num_rects, image_data, width, height, rowstride);
 }
 
+FREERDP_API void rfx_dec_tile(RFX_CONTEXT* context, uint8* srcData,
+                              uint32 length, uint8* imgBuf,
+                              int width, int height, int bpp)
+{
+	STREAM* s;
+	RFX_MESSAGE* message;
+	RFX_TILE *tile;
+	int bytesPerPixel = (bpp + 7) / 8;
+
+	s = stream_new(0);
+	message = xnew(RFX_MESSAGE);
+	stream_attach(s, srcData, length);
+
+	stream_seek(s, 8); /* header */
+
+	rfx_process_message_tileset(context, message, s);
+
+	/* Only one tile */
+	tile = rfx_message_get_tile(message, 0);
+
+	if (imgBuf) {
+#ifndef ENABLE_SOFT_CLIPPING
+		memcpy(imgBuf, tile->data, width * height * bytesPerPixel);
+#else
+		int i;
+		int j;
+		/*
+ 	 	 * +----------+
+		 * |      |   |
+		 * | clip |   |
+		 * |      |   |
+		 * +------+   |
+		 * |          |
+		 * +----------+
+		 */
+		int stride = width * bytesPerPixel;
+		for (i = 0; i < height; i++)
+		{
+			for (j = 0; j < stride; j++)
+			{
+				int di = j + i * stride;
+				int si = j + i * 64 * bytesPerPixel;
+				imgBuf[di] = tile->data[si];
+			}
+		}
+#endif
+	}
+
+	rfx_message_free(context, message);
+	stream_detach(s);
+	stream_free(s);
+}
+
+FREERDP_API int rfx_enc_tile(RFX_CONTEXT* context, uint8* buf, int len,
+                             uint8* image_data, int width, int height,
+                             int rowstride)
+{
+	STREAM *s = NULL;
+	int start_pos;
+	int end_pos;
+
+	s = stream_new(0);
+	stream_attach(s, buf, len);
+
+
+	stream_set_pos(s, 0);
+	start_pos = stream_get_pos(s);
+	rfx_compose_message_tileset(context, s, image_data, width, height,
+		                    rowstride);
+	end_pos = stream_get_pos(s);
+
+	stream_detach(s);
+	stream_free(s);
+
+	return end_pos - start_pos;
+}

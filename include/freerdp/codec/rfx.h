@@ -129,6 +129,10 @@ FREERDP_API void rfx_message_free(RFX_CONTEXT* context, RFX_MESSAGE* message);
 FREERDP_API void rfx_compose_message_header(RFX_CONTEXT* context, STREAM* s);
 FREERDP_API void rfx_compose_message(RFX_CONTEXT* context, STREAM* s,
 	const RFX_RECT* rects, int num_rects, uint8* image_data, int width, int height, int rowstride);
+FREERDP_API int rfx_enc_tile(RFX_CONTEXT* context, uint8* buf, int len,
+	uint8* image_data, int width, int height, int rowstride);
+FREERDP_API void rfx_dec_tile(RFX_CONTEXT* context, uint8* srcData,
+	uint32 length, uint8* imgBuf, int width, int height, int bpp);
 
 #ifdef __cplusplus
 }
