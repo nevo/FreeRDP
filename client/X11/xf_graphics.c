@@ -25,6 +25,7 @@
 #endif
 
 #include <freerdp/codec/bitmap.h>
+#include <freerdp/codec/rfx.h>
 
 #include "xf_graphics.h"
 
@@ -108,6 +109,7 @@ void xf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 		uint8* data, int width, int height, int bpp, int length, boolean compressed)
 {
 	uint16 size;
+	uint32 is_rfx = ((xfContext*)context)->settings->rfx_codec_mode & 0x100;
 
 	size = width * height * (bpp + 7) / 8;
 
@@ -118,15 +120,26 @@ void xf_Bitmap_Decompress(rdpContext* context, rdpBitmap* bitmap,
 
 	if (compressed)
 	{
-		boolean status;
-
-		status = bitmap_decompress(data, bitmap->data, width, height, length, bpp, bpp);
-
-		if (status != true)
+		if (is_rfx)
 		{
-			printf("Bitmap Decompression Failed\n");
+			xfInfo* xfi = ((xfContext*)context)->xfi;
+			rfx_context_set_pixel_format(xfi->rfx_context,
+						     RDP_PIXEL_FORMAT_B8G8R8);
+                        rfx_dec_tile(xfi->rfx_context, data, length,
+                                     bitmap->data, width, height, bpp);
 		}
-	}
+		else
+		{
+			boolean status;
+
+			status = bitmap_decompress(data, bitmap->data, width, height, length, bpp, bpp);
+
+			if (status != true)
+			{
+				printf("Bitmap Decompression Failed\n");
+			}
+		}
+        }
 	else
 	{
 		freerdp_image_flip(data, bitmap->data, width, height, bpp);
